@@ -1,11 +1,9 @@
-library(shiny)
-library(shinydashboard)
-library(shinyauthr)
 library(DBI)
+library(pool)
 library(RSQLite)
 
-conn <- dbConnect(SQLite(),
-                  dbname = "./ui_app.db")
+pool <- dbPool(SQLite(),
+               maxSize = 5,
+               dbname = "./ui_app.db")
 
-
-app_user <- dbReadTable(conn, "APP_USER")
+app_user <- dbReadTable(pool, "APP_USER")
