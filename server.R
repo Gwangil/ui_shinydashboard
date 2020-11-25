@@ -2,9 +2,6 @@ library(shiny)
 library(shinydashboard)
 library(shinyauthr)
 library(shinyjs)
-library(tidyverse)
-library(DBI)
-library(RSQLite)
 library(DT)
 
 shinyServer(function(input, output, session) {
@@ -22,17 +19,17 @@ shinyServer(function(input, output, session) {
     
     observe({
         if(credentials()$user_auth) {
-            removeClass(selector = "body", class = "sidebar-collapse")
-            show("mtcarsdb")
-            show("save")
-            show("sync")
-            show("download")
+            shinyjs::removeClass(selector = "body", class = "sidebar-collapse")
+            shinyjs::show("mtcarsdb")
+            shinyjs::show("save")
+            shinyjs::show("sync")
+            shinyjs::show("download")
         } else {
-            addClass(selector = "body", class = "sidebar-collapse")
-            hide("mtcarsdb")
-            hide("save")
-            hide("sync")
-            hide("download")
+            shinyjs::addClass(selector = "body", class = "sidebar-collapse")
+            shinyjs::hide("mtcarsdb")
+            shinyjs::hide("save")
+            shinyjs::hide("sync")
+            shinyjs::hide("download")
         }
     })
     
@@ -42,33 +39,27 @@ shinyServer(function(input, output, session) {
     mtcars_db <- dbReadTable(pool, "MTCARS")
     
     # 출력
-    output$mtcarsdb <- renderDT(mtcars_db,
-                                server = TRUE,
-                                editable = list(target = "row",
-                                                disable = list(columns = c(2, 4, 5))),
-                                filter = "top",
-                                options = list(scrollX = TRUE))    
+    output$mtcarsdb <- renderDT_edit(mtcars_db, c(2, 4, 5))
     
     # 수정
     observeEvent(input$mtcarsdb_cell_edit, {
+        edit_list <<- bind_rows(edit_list, input$mtcarsdb_cell_edit)
         mtcars_db <<- editData(mtcars_db, input$mtcarsdb_cell_edit, "mtcarsdb")
     })
     
     # 저장
     observeEvent(input$save, {
-        dbRemoveTable(pool, "MTCARS")
-        dbWriteTable(pool, "MTCARS", mtcars_db)
+        updateEditDT(data = mtcars_db,
+                     table_name = "MTCARS",
+                     keyIndex = 12,
+                     edit_list = edit_list,
+                     pool = pool)
     })
     
     # 동기화
     observeEvent(input$sync, {
         mtcars_db <<- dbReadTable(pool, "MTCARS")
-        output$mtcarsdb <- renderDT(mtcars_db,
-                                    server = TRUE,
-                                    editable = list(target = "row",
-                                                    disable = list(columns = c(2, 4, 5))),
-                                    filter = "top",
-                                    options = list(scrollX = TRUE))  
+        output$mtcarsdb <- renderDT_edit(mtcars_db, c(2, 4, 5))
     })
     
     # 다운로드
@@ -79,7 +70,7 @@ shinyServer(function(input, output, session) {
     
 })
 
-onStop(function() {
-    poolClose(pool)
-    # rm(pool)
-})
+# onStop(function() {
+#     poolClose(pool)
+#     # rm(pool)
+# })
