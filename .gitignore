@@ -8,3 +8,5 @@ sqlite.R
 flexdashboard
 test_manualLogin.R
 test_shinymanager.R
+tests
+tests/*
